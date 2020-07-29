@@ -64,10 +64,42 @@ public class Scanner {
                     addToken(SLASH);
                 }
                 break;
+            case ' ':
+            case '\r':
+            case '\t':
+                break;
+            case '\n':
+                // When newline character is encountered, increment line number
+                line++;
+                break;
+            case '"': string(); break;
             default:
                 Lox.error(line, "Unexpected character.");
                 break;
         }
+    }
+
+    private void string() {
+        // Keep scanning string until ending quote(") is found or end of file
+        while (peek() != '"' && !isAtEnd()) {
+            // For multi line strings increment line number
+            if (peek() == '\n') {
+                line++;
+            }
+            advance();
+        }
+        // Unterminated String
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated String.");
+            return;
+        }
+        // get closing "
+        advance();
+
+        // Trim the surrounding quotes, start + 1 will be the first char and
+        // current - 1 will be the last char
+        String value = source.substring(start + 1, current - 1);
+        addToken((STRING, value));
     }
 
     // Check for operators with multiple characters such as !=, >=, etc
@@ -81,7 +113,7 @@ public class Scanner {
         current++;
         return true
     }
-
+    // Used for looking ahead of current character until end of line
     private char peek() {
         if (isAtEnd()) {
             return '\0'
