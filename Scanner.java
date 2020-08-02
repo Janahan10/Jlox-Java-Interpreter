@@ -17,6 +17,28 @@ public class Scanner {
     // Keeps track of line number of current
     private int line = 1;
 
+    private static final Map<String, TokenType> keywords;
+
+    static {
+        keywords = new HashMap<>();
+        keywords.put("and",    AND);
+        keywords.put("class",  CLASS);
+        keywords.put("else",   ELSE);
+        keywords.put("false",  FALSE);
+        keywords.put("for",    FOR);
+        keywords.put("fun",    FUN);
+        keywords.put("if",     IF);
+        keywords.put("nil",    NIL);
+        keywords.put("or",     OR);
+        keywords.put("print",  PRINT);
+        keywords.put("return", RETURN);
+        keywords.put("super",  SUPER);
+        keywords.put("this",   THIS);
+        keywords.put("true",   TRUE);
+        keywords.put("var",    VAR);
+        keywords.put("while",  WHILE);
+    }
+
     public Scanner (String source) {
         this.source = source;
     }
@@ -74,9 +96,45 @@ public class Scanner {
                 break;
             case '"': string(); break;
             default:
-                Lox.error(line, "Unexpected character.");
+                if (isDigit(c)) {
+                    number();
+                } else if (isAlpha(c)) {
+                    identifier();
+                } else {
+                    Lox.error(line, "Unexpected character.");
+                }
                 break;
         }
+    }
+    // Checks for identifier token
+    private void identifier() {
+        while (isAlphaNumeric(peek())) {
+            advance();
+        }
+
+        // Checks if the identifier is a reserved word
+        String text = source.substring(start, current);
+        TokenType type = keywords.get(text);
+        if (type == null) {
+            type = IDENTIFIER;
+        }
+        addToken(type);
+    }
+
+    private void number() {
+        // go through whole number part
+        while (isDigit(peek())) {
+            advance();
+        }
+        // Search for decimal/fractional part of number
+        if (peek() == '.' && isDigit(peekNext())) {
+            // Take the decimal point
+            advance();
+            while (isDigit(peek())) {
+                advance();
+            }
+        }
+        addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
     }
 
     private void string() {
@@ -119,6 +177,28 @@ public class Scanner {
             return '\0'
         }
         return source.charAt(current);
+    }
+
+    // Small look ahead method to check if there are extra characters after
+    // the current character
+    private char peekNext() {
+        if (current + 1 >= source.length()) {
+            return '\0';
+        }
+        return source.charAt(current + 1);
+    }
+
+    private boolean isAlpha(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    }
+
+    private boolean isAlphaNumeric(char c) {
+        return isAlpha(c) || isDigit(c);
+    }
+
+    // Check if the charcter is a numerical character
+    private boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
     }
 
     // Gets next character in source file and returns it
